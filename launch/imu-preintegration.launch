@@ -1,0 +1,6 @@
+<?xml version="1.0" ?>
+<launch>
+    <node pkg="imu_preintegration" type="imu_preintegration_node" name="imu_preintegration_node" output="screen"
+          args="-cfg $(find imu_preintegration)/config/IMU.xml">
+    </node>
+</launch>

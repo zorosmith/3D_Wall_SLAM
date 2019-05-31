@@ -1,0 +1,39 @@
+<?xml version="1.0"?>
+<nullmax>
+  <calibration>
+    <lidar 
+      topic_name="/velodyne_points" 
+      use_euler_angles="false">
+      <translation 
+        x="0." 
+        y="0." 
+        z="0." /><!-- m -->
+      <angles 
+        r="0." 
+        p="0." 
+        y="0." /><!-- degree -->
+      <quaternion 
+        w="1." 
+        x="0." 
+        y="0." 
+        z="0." />
+    </lidar>
+    <imu 
+      topic_name="/imu/data" 
+      use_euler_angles="false">
+      <translation 
+        x="0." 
+        y="0." 
+        z="0." /><!-- m -->
+      <angles 
+        r="0." 
+        p="0." 
+        y="0." /><!-- degree -->
+      <quaternion 
+        w="1." 
+        x="0." 
+        y="0." 
+        z="0." />
+    </imu>
+  </calibration>
+</nullmax>
