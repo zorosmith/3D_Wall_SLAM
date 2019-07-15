@@ -24,15 +24,18 @@ void Lidar::Callback(const sensor_msgs::PointCloud2::ConstPtr& msg)
     got_first_data_ = true;
   }
 
+  double timestamp = msg->header.stamp.toSec() - 1560860000.0;
+  timestamp  = int(timestamp *1000) / 1000.0;
+  ROS_INFO("In lidar, pointcloud stamp value is: %f", timestamp);
+
   pcl::PCLPointCloud2 pcl_pc2;
   pcl_conversions::toPCL( *msg, pcl_pc2 );
+  // std::cout << std::fixed << "pcl_pc2 timestamp : " << pcl_pc2.header.stamp << std::endl;
   PointCloudPtr incoming_cloud( new PointCloudType );
   pcl::fromPCLPointCloud2( pcl_pc2, *incoming_cloud );
 
-  AddCloud( incoming_cloud );
-  //********gordon code********
-  std::cout << "cloud_ size : " << clouds_.size() << std::endl;
-  //********gordon code********
+  AddCloud( incoming_cloud, timestamp );
+
 }
 
 Lidar::PointCloudPtr Lidar::GetSourceCloud()
@@ -53,7 +56,17 @@ Lidar::PointCloudPtr Lidar::GetNewCloud()
 
   Lidar::PointCloudPtr ret = boost::make_shared<Lidar::PointCloudType>(clouds_[0]);
   clouds_.erase( clouds_.begin() );
+  vec_lidar_stamp.erase( vec_lidar_stamp.begin() );
   return ret;
+}
+
+double Lidar::Get_SourcePoints_Stamp()
+{
+  if( vec_lidar_stamp.empty() ){
+    return -1.0;
+  }
+
+  return vec_lidar_stamp[0];
 }
 
 // Lidar::PointCloudPtr Lidar::GetNewCloud(

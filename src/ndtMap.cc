@@ -1,9 +1,12 @@
 #include "lidar.h"
+#include "my_imu.h"
 #include "ros/ros.h"
 #include "registrators/ndt_gicp.h"
+#include "extr_PlaneFeature.h"
 
-#include <pcl/conversions.h>
-#include <pcl_conversions/pcl_conversions.h>
+
+// #include <pcl/conversions.h>
+// #include <pcl_conversions/pcl_conversions.h>
 
 #include <tf/transform_broadcaster.h>
 
@@ -28,11 +31,13 @@ class NdtMapping{
         void calculate_odom(Lidar::PointCloudPtr targetPtr, Lidar::PointCloudPtr sourcePtr);
         void publishMapCloud();
         void mapping(Lidar::PointCloudPtr targetCloud, Lidar::PointCloudPtr sourceCloud);
-
+        Eigen::Matrix4f imuPreintegration(double lidar_stamp);
         void run();
 
     private:
         std::shared_ptr<Lidar> lidar_;
+        std::shared_ptr<My_Imu> imu_;
+        std::shared_ptr<Extr_PLANEFEATURE> ExtrPlanes_;
         std::shared_ptr<registrator::RegistrationWithNDTandGICP<Lidar::PointType>>
             scan_matcher_;
         // std::shared_ptr<Imu> imu_;
@@ -40,12 +45,16 @@ class NdtMapping{
         int ndtCount;
         bool match_success;
 
-        std::string topic_name;
+        std::string lidar_topic_name;
+        std::string imu_topic_name;
         Eigen::Matrix4f tf_pose;
 
-        Eigen::Matrix4f guess;
+        Eigen::Matrix4f guess_mat4f;
         Eigen::Matrix4f result;
+        std::vector<Eigen::Matrix4f> vec_pairwiseResult;
         Eigen::Matrix4f ndtTransform;
+
+        bool GUESS;
         
         // std::vector<Lidar::PointCloudPtr> vec_PointCloudPtr;
         Lidar::PointCloudPtr mapPointCloud;
@@ -59,13 +68,21 @@ NdtMapping::NdtMapping(){
     initializationValue();
 
     lidar_ = std::make_shared<Lidar>( tf_pose );
-    lidar_->Initialise( nh, topic_name );  //初始化之后便开始订阅lidar数据
+    lidar_->Initialise( nh, lidar_topic_name );  //初始化之后便开始订阅lidar数据
+
+    imu_ = std::make_shared<My_Imu>( tf_pose );
+    imu_->Initialise( nh, imu_topic_name );  //初始化之后便开始订阅imu数据
+
+    ExtrPlanes_ = std::make_shared<Extr_PLANEFEATURE>();
+    ExtrPlanes_->Initialise( nh, lidar_topic_name );  // 订阅同步后的lidar数据
 
     scan_matcher_ = std::make_shared<
     registrator::RegistrationWithNDTandGICP<Lidar::PointType>>();
 }
 
 void NdtMapping::initializationValue(){
+    GUESS = false;
+
     ndtCount = 0;
     match_success = false;
     mapPointCloud.reset(new Lidar::PointCloudType);
@@ -73,7 +90,8 @@ void NdtMapping::initializationValue(){
 
     ndtTransform = Eigen::Matrix4f::Identity();
     tf_pose = Eigen::Matrix4f::Identity();
-    topic_name = "/velodyne_points";
+    lidar_topic_name = "/sync/velodyne_points";
+    imu_topic_name = "/sync/imu/data";
 
     laserOdometryTrans.frame_id_ = "/laser_init";
     laserOdometryTrans.child_frame_id_ = "/laser";
@@ -98,7 +116,9 @@ void NdtMapping::calculate_odom(Lidar::PointCloudPtr targetPtr, Lidar::PointClou
     // std::cout << "targetCloud size : " << targetPtr->points.size() << std::endl;
     // std::cout << "sourceCloud size : " << sourcePtr->points.size() << std::endl;
 
-    if (scan_matcher_->align( guess, result )){
+    if (scan_matcher_->align( guess_mat4f, result )){
+        vec_pairwiseResult.push_back(result);
+        std::cout << "NDT T matrix : " << std::endl << result << std::endl;
         if (ndtCount == 0)
             ndtTransform = result;
         else
@@ -158,6 +178,12 @@ void NdtMapping::mapping(Lidar::PointCloudPtr targetCloud, Lidar::PointCloudPtr 
     publishMapCloud();
 }
 
+Eigen::Matrix4f NdtMapping::imuPreintegration(double lidar_stamp){
+    Eigen::Matrix3f imu_rotMat = imu_->GETimu_rotMat(lidar_stamp);
+    // This function is uncompleted
+    return Eigen::Matrix4f::Identity();
+}
+
 void NdtMapping::run(){
     if (lidar_->Get_Clouds_size() < 3)
         return;
@@ -168,11 +194,19 @@ void NdtMapping::run(){
     if (targetCloudPtr == 0 || sourceCloudPtr == 0)
         return;
 
-    std::cout << "**************************" << std::endl;
-    std::cout << "targetCloud size : " << targetCloudPtr->points.size() << std::endl;
-    std::cout << "sourceCloud size : " << sourceCloudPtr->points.size() << std::endl;
-    
-    guess = Eigen::Matrix4f::Identity();
+    // std::cout << "**************************" << std::endl;
+    // std::cout << "targetCloud size : " << targetCloudPtr->points.size() << std::endl;
+    // std::cout << "sourceCloud size : " << sourceCloudPtr->points.size() << std::endl;
+    double lidar_stamp = lidar_ -> Get_SourcePoints_Stamp();
+    if (lidar_stamp < 0)
+        GUESS = false;
+
+    if( GUESS ){
+        guess_mat4f = imuPreintegration(lidar_stamp);
+    }
+    else{
+        guess_mat4f = Eigen::Matrix4f::Identity();
+    }
     result = Eigen::Matrix4f::Identity();
 
     // calculate odometry
@@ -180,6 +214,9 @@ void NdtMapping::run(){
     // std::cout << "Get out of calculate_odom function !" << std::endl;
     // std::cout << "ndtTransform: " << std::endl;
     // std::cout << ndtTransform << std::endl;
+
+    ExtrPlanes_->run_extraction();
+    ExtrPlanes_->planeCorrespondence(vec_pairwiseResult[0]);
 
     if (match_success){
         mapping(targetCloudPtr, sourceCloudPtr);
@@ -195,7 +232,7 @@ int main(int argc, char **argv){
 
     NdtMapping ndt;
 
-    ros::Rate rate(0.5);
+    ros::Rate rate(10);
     while (ros::ok())
     {
         ros::spinOnce();

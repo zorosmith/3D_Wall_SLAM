@@ -1,0 +1,14 @@
+<launch>
+    
+    <!--- Sim Time -->
+    <!-- param name="/use_sim_time" value="true" / -->
+
+    <!--- TF -->
+    <node pkg="tf" type="static_transform_publisher" name="laser_init_to_imu"  args="0 0 -0.16  0 0 0 /laser_init  /imu 10" />
+
+    <!--- LeGO-LOAM -->
+    <node pkg="ddd_wall_mapping" type="msgs_synchronizer"    name="msgs_synchronizer"    output="screen"/>
+    <node pkg="ddd_wall_mapping" type="ndtMap"    name="ndtMap"    output="screen"/>
+
+
+</launch>

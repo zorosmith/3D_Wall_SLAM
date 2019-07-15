@@ -63,9 +63,9 @@ public:
     //为More-Thuente线搜索设置最大步长
     ndt_.setStepSize( 0.1 );
     //设置NDT网格结构的分辨率（VoxelGridCovariance）
-    ndt_.setResolution(0.7);
+    ndt_.setResolution(0.6);
     //设置匹配迭代的最大次数
-    ndt_.setMaximumIterations(120);
+    ndt_.setMaximumIterations(150);
     
     gicp_.setRotationEpsilon(1e-3);
     gicp_.setMaximumIterations(2);
@@ -151,7 +151,7 @@ public:
       #endif
 
       end_ndt = clock();
-      std::cout << "ndt align cost time : " << (end_ndt - start_ndt)/1000 << std::endl;
+      // std::cout << "ndt align cost time : " << 1000*(end_ndt - start_ndt)/(double)CLOCKS_PER_SEC << std::endl;
       
       ndt_score = ndt_.getFitnessScore();
       
@@ -162,44 +162,49 @@ public:
       ndt_guess = ndt_.getFinalTransformation();
     }
 
-    double icp_score = 10.;
-    Eigen::Matrix4f final_guess;
-    clock_t start_Gicp, end_Gicp;
-    if( ndt_score <= 1. )
-    {  
-      icp_score = ndt_score;
-      
-      gicp_.setInputSource( down_sampled_input_cloud_ );
-      gicp_.setInputTarget( down_sampled_target_cloud_ );
-      //*******gordon code********
-      output_cloud->clear();
-      //*******gordon code********
+    // gordon code
+    result = ndt_guess;
+    // gordon code
 
-      start_Gicp = clock();
-      gicp_.align(*output_cloud, ndt_guess);
-      end_Gicp = clock();
-      std::cout << "Gicp cost time : " << (end_Gicp-start_Gicp)/1000 << std::endl;
+    // double icp_score = 10.;
+    // Eigen::Matrix4f final_guess;
+    // clock_t start_Gicp, end_Gicp;
+    // if( ndt_score <= 1. )
+    // {  
+    //   icp_score = ndt_score;
       
-      icp_score = gicp_.getFitnessScore();
-      final_guess = gicp_.getFinalTransformation();
+    //   gicp_.setInputSource( down_sampled_input_cloud_ );
+    //   gicp_.setInputTarget( down_sampled_target_cloud_ );
+    //   //*******gordon code********
+    //   output_cloud->clear();
+    //   //*******gordon code********
+
+    //   start_Gicp = clock();
+    //   gicp_.align(*output_cloud, ndt_guess);
+    //   end_Gicp = clock();
+    //   std::cout << "Gicp cost time : " << 1000*(end_Gicp-start_Gicp)/(double)CLOCKS_PER_SEC << std::endl;
       
-      // final_guess(2,3) = 0.;     
+    //   icp_score = gicp_.getFitnessScore();
+    //   final_guess = gicp_.getFinalTransformation();
+      
+    //   // final_guess(2,3) = 0.;     
 
-      RegistratorInterface<PointType>::final_score_ = std::exp( -icp_score );
-      result = final_guess;
+    //   RegistratorInterface<PointType>::final_score_ = std::exp( -icp_score );
+    //   result = final_guess;
 
-      return true;
-    }
-    else 
+    //   return true;
+    // }
+    // else 
+    if( ndt_score > 1. )
     {
       result = guess;
-      final_score_ = std::exp( -icp_score );
+      // final_score_ = std::exp( -icp_score );
       return false;
     }
     
     //*******gordon code********
-    std::cout << "In ndt_gicp.h, ndt_score : " << ndt_score << std::endl;
-    std::cout << "In ndt_gicp.h, icp_score : " << icp_score << std::endl;
+    // std::cout << "In ndt_gicp.h, ndt_score : " << ndt_score << std::endl;
+    // std::cout << "In ndt_gicp.h, icp_score : " << icp_score << std::endl;
     //*******gordon code********
 
     return true;

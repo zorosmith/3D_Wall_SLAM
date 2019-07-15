@@ -23,14 +23,16 @@ void Imu::Initialise( ros::NodeHandle& nh, std::string topic_name )
 
 void Imu::Callback(const sensor_msgs::Imu::ConstPtr& msg)
 {
-  if( conversion::ToLocalTime(msg->header.stamp) <= newest_time_stamp_ ) {
-    PRINT_ERROR("Wrong time in imu msg.");
-    return;
-  }
+    if( conversion::ToLocalTime(msg->header.stamp) <= newest_time_stamp_ ) {
+      PRINT_ERROR("Wrong time in imu msg.");
+      return;
+    }
 
-  if (imuMsgs_count % 5 == 0)
-  {
-    // remove the gravity
+    double timestamp = msg->header.stamp.toSec();
+    ROS_INFO("In imu, time stamp value is: %f", timestamp);
+    // if (imuMsgs_count % 5 == 0)
+    // {
+      // remove the gravity
     double roll, pitch, yaw;
     tf::Quaternion orientation;
     tf::quaternionMsgToTF(msg->orientation, orientation);
@@ -54,21 +56,21 @@ void Imu::Callback(const sensor_msgs::Imu::ConstPtr& msg)
       if (imuMsgs_count % 20 == 0)
         queue_targetTime.push(newest_time_stamp_);
     }
-    std::cout << "imu : " << std::endl;
-    // std::cout << "imu sec : " << sensors::ToLocalImu(*msg).header.stamp.secs << std::endl;
-    // std::cout << "imu nsec : " << sensors::ToLocalImu(*msg).header.stamp.nsecs << std::endl;
-    // std::cout << "angular velocity : " << sensors::ToLocalImu(*msg).angular_velocity.x << " , "
-    //   << sensors::ToLocalImu(*msg).angular_velocity.y << " , "
-    //   << sensors::ToLocalImu(*msg).angular_velocity.z << std::endl;
-    std::cout << "linear_accleration : " << newImu.linear_acceleration.x << " , "
-      << newImu.linear_acceleration.y << " , "
-      << newImu.linear_acceleration.z << std::endl;
-    // std::cout << "quaternion : " << sensors::ToLocalImu(*msg).orientation.x << " , "
-    //   << sensors::ToLocalImu(*msg).orientation.y << " , "
-    //   << sensors::ToLocalImu(*msg).orientation.z << " , "
-    //   << sensors::ToLocalImu(*msg).orientation.w << std::endl;
-  }
-  imuMsgs_count++;
+    // std::cout << "imu : " << std::endl;
+      // std::cout << "imu sec : " << sensors::ToLocalImu(*msg).header.stamp.secs << std::endl;
+      // std::cout << "imu nsec : " << sensors::ToLocalImu(*msg).header.stamp.nsecs << std::endl;
+      // std::cout << "angular velocity : " << sensors::ToLocalImu(*msg).angular_velocity.x << " , "
+      //   << sensors::ToLocalImu(*msg).angular_velocity.y << " , "
+      //   << sensors::ToLocalImu(*msg).angular_velocity.z << std::endl;
+      // std::cout << "linear_accleration : " << newImu.linear_acceleration.x << " , "
+      //   << newImu.linear_acceleration.y << " , "
+      //   << newImu.linear_acceleration.z << std::endl;
+      // std::cout << "quaternion : " << sensors::ToLocalImu(*msg).orientation.x << " , "
+      //   << sensors::ToLocalImu(*msg).orientation.y << " , "
+      //   << sensors::ToLocalImu(*msg).orientation.z << " , "
+      //   << sensors::ToLocalImu(*msg).orientation.w << std::endl;
+    // }
+    imuMsgs_count++;
 }
 
 bool Imu::GetIntergratedPose( const SimpleTime& target_time,

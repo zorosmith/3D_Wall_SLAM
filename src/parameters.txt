@@ -1,0 +1,39 @@
+pcd_location=/home/gordon/feelEnvironment/data/one-shot/0618/unorganized/1560865769249704.pcd
+#pcd_location=/home/gordon/feelEnvironment/data/ori_pointcloud.pcd
+
+
+## downsample
+#  leaf_size: meter
+leaf_size=0.010f
+
+
+## EuclideanClusterExtraction
+#  setClusterTolerance 单位-m
+MinCluster=800
+cluster_tolerance=0.09
+#  topN
+EuclideanRatio=0.8
+
+## RegionGrowing segmentation
+# Min Cluster Size
+MinClusterSize=800
+#  topN
+SegRatio=1.0
+Smoothness=10.0
+Curvature=0.6
+
+## RanSaC for plane
+#  distance threshold
+DistanceThreshold=0.05
+#  remain scale
+RemainScale=0.5
+
+## Correspondence plane feature
+# percentage of size of target plane, % 
+SizeThrese=0.2
+# cos(10 degree),rad;
+NormalThres=0.174
+# Euclidean distance, meter
+CentroidThres=0.05
+
+

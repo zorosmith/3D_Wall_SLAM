@@ -27,9 +27,11 @@ find_package(catkin REQUIRED COMPONENTS
             roscpp
             std_msgs
             tf
-            nav_msgs
+            visualization_msgs
             pcl_conversions
             pcl_ros
+            sensor_msgs
+            message_filters
             ${PCL_OPENMP_PACKAGES}
         )
 
@@ -52,15 +54,17 @@ catkin_package(
         tf
         pcl_ros
         pcl_conversions
-        nav_msgs 
+        visualization_msgs 
         std_msgs 
+        sensor_msgs
+        #message_filters
         ${PCL_OPENMP_PACKAGES}
    LIBRARIES slam_sensors
 )
 
 
 include_directories(
-  include ${catkin_INCLUDE_DIRS}${catkin_INCLUDE_DIRS}${EIGEN_INCLUDE_DIR})
+  include ${catkin_INCLUDE_DIRS} ${EIGEN_INCLUDE_DIR})
 include_directories(${Boost_INCLUDE_DIR})
 include_directories(${GTSAM_INCLUDE_DIR})
 include_directories(${PCL_INCLUDE_DIRS})
@@ -77,12 +81,14 @@ MESSAGE(STATUS "catkin_INCLUDE_DIRS: " ${catkin_INCLUDE_DIRS})
 
 add_library(slam_sensor
                     src/imu.cc
+                    src/my_imu.cc
                     src/lidar.cc
                     src/msg_conversion.cc
                     src/sensors.cc
                     src/options.cc
                     src/common/macro_defines.cc
                     src/common/pugixml.cc
+                    src/extr_PlaneFeature.cc
                     )
 
 
@@ -111,6 +117,9 @@ target_link_libraries(ndtMap
     ceres
 )
 
+add_executable(msgs_synchronizer src/msgs_synchronizer.cc)
+target_link_libraries(msgs_synchronizer ${catkin_LIBRARIES})
+
 MESSAGE(STATUS "catkin_LIBRARIES: " ${catkin_LIBRARIES})
 
 install( TARGETS
@@ -119,8 +128,4 @@ install( TARGETS
     LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
     RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
-
-#install(DIRECTORY include/amcl/
-#  DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}
-#)
 

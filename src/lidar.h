@@ -29,9 +29,10 @@ public:
   void Initialise( ros::NodeHandle& nh, std::string topic_name );
 
   inline void 
-  AddCloud( const PointCloudPtr& cloud ) {
+  AddCloud( const PointCloudPtr& cloud, double timestamp) {
     if( cloud && !cloud->empty() ) {
       clouds_.push_back( *cloud );
+      vec_lidar_stamp.push_back( timestamp );
     } else {
       LOG(ERROR) << "nullptr or empty cloud" << std::endl;
     }
@@ -41,9 +42,14 @@ public:
   PointCloudPtr GetSourceCloud();
   PointCloudPtr GetNewCloud( const conversion::PclTimeStamp& time_stamp );
 
+  double Get_SourcePoints_Stamp();
+
   // ********gordon code*******
   inline
   int Get_Clouds_size() { return clouds_.size(); }
+
+  inline
+  int Get_TimeStamp_size() {return vec_lidar_stamp.size();}
   // ********gordon code*******
 
   inline
@@ -66,12 +72,13 @@ protected:
 
 private:
   //********gordon code***********
-  int sampleNum = 7;
+  int sampleNum = 5;
   int laserCount = -1;
   //********gordon code***********
 
   Eigen::Matrix4f pose_;
   std::vector<PointCloudType> clouds_;
+  std::vector<double> vec_lidar_stamp;
   
   bool got_first_data_ = false;
   bool calibration_finished_ = false;
